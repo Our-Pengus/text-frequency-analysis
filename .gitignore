@@ -1,0 +1,25 @@
+# 빌드 출력
+wasm/build/
+wasm/*.js
+wasm/*.wasm
+wasm/*.wasm.map
+
+# Emscripten 캐시
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 로그
+*.log
+
+
+build/
