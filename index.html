@@ -7,246 +7,324 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: #F7F8FA;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 16px;
+            line-height: 1.5;
         }
         .container {
-            max-width: 1200px;
+            max-width: 680px;
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 30px;
         }
         h1 {
-            color: #333;
-            margin-bottom: 30px;
+            color: #191F28;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 32px;
             text-align: center;
+            letter-spacing: -0.5px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         }
         textarea {
             width: 100%;
-            min-height: 200px;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
+            min-height: 180px;
+            padding: 16px;
+            border: 1px solid #E5E8EB;
+            border-radius: 12px;
+            font-size: 15px;
             font-family: inherit;
             resize: vertical;
+            background: #FAFBFC;
+            color: #191F28;
+            transition: all 0.2s;
         }
         textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #3182F6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.1);
+        }
+        textarea::placeholder {
+            color: #8B95A1;
         }
         .controls {
             display: flex;
-            gap: 10px;
-            margin: 20px 0;
+            gap: 8px;
+            margin-top: 16px;
         }
         button {
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            flex: 1;
+            padding: 14px 20px;
+            background: #3182F6;
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 12px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(49, 130, 246, 0.2);
         }
-        button:hover {
-            transform: translateY(-2px);
+        button:hover:not(:disabled) {
+            background: #1B64DA;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(49, 130, 246, 0.3);
+        }
+        button:active:not(:disabled) {
+            transform: translateY(0);
         }
         button:disabled {
-            background: #ccc;
+            background: #E5E8EB;
+            color: #8B95A1;
             cursor: not-allowed;
-            transform: none;
+            box-shadow: none;
+        }
+        button.secondary {
+            background: white;
+            color: #3182F6;
+            border: 1px solid #E5E8EB;
+            box-shadow: none;
+        }
+        button.secondary:hover:not(:disabled) {
+            background: #F7F8FA;
+            border-color: #3182F6;
         }
         .status {
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            font-size: 14px;
             display: none;
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         .status.info {
-            background: #e3f2fd;
-            color: #1976d2;
+            background: #E8F4FD;
+            color: #1B64DA;
             display: block;
         }
         .status.error {
-            background: #ffebee;
-            color: #c62828;
+            background: #FEE;
+            color: #F04452;
             display: block;
         }
         .results {
-            margin-top: 30px;
+            margin-top: 24px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        .results h2 {
+            color: #191F28;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.3px;
         }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+        .result-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #E5E8EB;
+            transition: all 0.2s;
+            animation: fadeIn 0.3s ease;
         }
-        th {
-            background: #f5f5f5;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .result-item:hover {
+            border-color: #3182F6;
+            box-shadow: 0 2px 8px rgba(49, 130, 246, 0.1);
+            transform: translateX(4px);
+        }
+        .result-rank {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F7F8FA;
+            border-radius: 10px;
+            font-weight: 700;
+            color: #8B95A1;
+            font-size: 14px;
+            margin-right: 16px;
+        }
+        .result-item:nth-child(1) .result-rank {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: white;
+        }
+        .result-item:nth-child(2) .result-rank {
+            background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
+            color: white;
+        }
+        .result-item:nth-child(3) .result-rank {
+            background: linear-gradient(135deg, #CD7F32 0%, #B8860B 100%);
+            color: white;
+        }
+        .result-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-word {
+            font-size: 16px;
             font-weight: 600;
+            color: #191F28;
         }
-        tr:hover {
-            background: #f9f9f9;
+        .result-count {
+            font-size: 16px;
+            font-weight: 700;
+            color: #3182F6;
+            background: #E8F4FD;
+            padding: 6px 12px;
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>텍스트 빈도 분석기</h1>
+        <h1>📊 텍스트 빈도 분석</h1>
         
-        <textarea id="textInput" placeholder="분석할 텍스트를 입력하세요..."></textarea>
-        
-        <div class="controls">
-            <button id="analyzeBtn" onclick="analyzeText()" disabled>전체 분석</button>
-            <button id="top10Btn" onclick="getTop10()" disabled>상위 10개</button>
-            <button onclick="clearResults()">초기화</button>
+        <div class="card">
+            <textarea id="textInput" placeholder="분석할 텍스트를 입력해주세요..."></textarea>
+            
+            <div class="controls">
+                <button id="analyzeBtn" onclick="analyzeText()" disabled>전체 분석</button>
+                <button id="top10Btn" onclick="getTop10()" disabled>상위 10개</button>
+                <button class="secondary" onclick="clearResults()">초기화</button>
+            </div>
+
+            <div id="status" class="status"></div>
         </div>
 
-        <div id="status" class="status"></div>
-
-        <div class="results" id="resultsSection" style="display: none;">
+        <div class="results card" id="resultsSection" style="display: none;">
             <h2>분석 결과</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>순위</th>
-                        <th>단어</th>
-                        <th>빈도</th>
-                    </tr>
-                </thead>
-                <tbody id="resultsBody"></tbody>
-            </table>
+            <div id="resultsBody"></div>
         </div>
     </div>
 
-    <script src="js/text_frequency.js"></script>
+    <script src="js/text_frequency_wasm.js"></script>
+    <script src="js/text_frequency_js.js"></script>
     <script>
         let wasmModule = null;
 
+        // WASM 모듈 초기화
         window.addEventListener('load', async () => {
             try {
                 showStatus('WASM 모듈 로딩 중...', 'info');
                 wasmModule = await createModule({
-                    locateFile: (path, scriptDirectory) => {
-                        if (path.endsWith('.wasm')) {
-                            const wasmPath = scriptDirectory + path;
-                            console.log('WASM 파일 경로:', wasmPath);
-                            return wasmPath;
-                        }
-                        return scriptDirectory + path;
-                    },
-                    onAbort: (what) => {
-                        console.error('WASM 로드 중단:', what);
-                    }
+                    locateFile: (path, scriptDirectory) => scriptDirectory + path,
+                    onAbort: (what) => console.error('WASM 로드 중단:', what)
                 });
                 showStatus('준비 완료!', 'info');
                 document.getElementById('analyzeBtn').disabled = false;
                 document.getElementById('top10Btn').disabled = false;
             } catch (error) {
-                console.error('WASM 모듈 로드 실패 상세:', error);
                 showStatus('오류: ' + error.message, 'error');
             }
         });
 
+        // 상태 메시지 표시
         function showStatus(message, type) {
             const statusEl = document.getElementById('status');
             statusEl.textContent = message;
             statusEl.className = 'status ' + type;
         }
 
-        // C++ 벡터를 JavaScript 배열로 변환
+        // WASM 벡터를 JS 배열로 변환
         function vectorToArray(cppVector) {
             const results = [];
-            const size = cppVector.size();
-            
-            for (let i = 0; i < size; i++) {
+            for (let i = 0; i < cppVector.size(); i++) {
                 const item = cppVector.get(i);
-                results.push({
-                    word: item.word,
-                    count: item.count
-                });
+                results.push({ word: item.word, count: item.count });
             }
-            
-            // 메모리 해제
             cppVector.delete();
             return results;
         }
 
+        // 전체 분석 (WASM vs JS 성능 비교)
         async function analyzeText() {
             const text = document.getElementById('textInput').value.trim();
-            if (!text) {
-                showStatus('텍스트를 입력해주세요.', 'error');
-                return;
-            }
-            if (!wasmModule) {
-                showStatus('WASM 모듈이 아직 로드되지 않았습니다.', 'error');
-                return;
-            }
+            if (!text || !wasmModule) return;
+            
             try {
                 showStatus('분석 중...', 'info');
-                console.log('입력 텍스트:', text);
-                const cppResult = wasmModule.getFrequencyAnalysis(text);
-                console.log('C++ 결과 벡터:', cppResult);
-                console.log('벡터 크기:', cppResult.size());
-                const results = vectorToArray(cppResult);
-                console.log('변환된 결과:', results);
-                displayResults(results);
-                showStatus(`분석 완료! 총 ${results.length}개의 고유 단어를 찾았습니다.`, 'info');
+                
+                const wasmStart = performance.now();
+                const wasmResults = vectorToArray(wasmModule.getFrequencyAnalysis(text));
+                const wasmTime = (performance.now() - wasmStart).toFixed(2);
+                
+                const jsStart = performance.now();
+                analyzeFrequencyJS(text);
+                const jsTime = (performance.now() - jsStart).toFixed(2);
+                
+                displayResults(wasmResults);
+                showStatus(`분석 완료! 총 ${wasmResults.length}개 (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`, 'info');
             } catch (error) {
-                console.error('분석 에러:', error);
                 showStatus('분석 실패: ' + error.message, 'error');
             }
         }
 
+        // 상위 10개 단어 분석
         async function getTop10() {
             const text = document.getElementById('textInput').value.trim();
-            if (!text) {
-                showStatus('텍스트를 입력해주세요.', 'error');
-                return;
-            }
-            if (!wasmModule) {
-                showStatus('WASM 모듈이 아직 로드되지 않았습니다.', 'error');
-                return;
-            }
+            if (!text || !wasmModule) return;
+            
             try {
                 showStatus('분석 중...', 'info');
-                const cppResult = wasmModule.getFrequencyAnalysis(text);
-                const results = vectorToArray(cppResult);
-                const top10 = results.slice(0, 10);
-                displayResults(top10);
+                const results = vectorToArray(wasmModule.getFrequencyAnalysis(text));
+                displayResults(results.slice(0, 10));
                 showStatus('상위 10개 단어 분석 완료!', 'info');
             } catch (error) {
                 showStatus('분석 실패: ' + error.message, 'error');
             }
         }
 
+        // 결과 카드 표시
         function displayResults(results) {
-            const resultsSection = document.getElementById('resultsSection');
             const resultsBody = document.getElementById('resultsBody');
-            resultsBody.innerHTML = '';
-            results.forEach((result, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${result.word}</td>
-                    <td>${result.count}</td>
-                `;
-                resultsBody.appendChild(row);
-            });
-            resultsSection.style.display = 'block';
+            resultsBody.innerHTML = results.map((r, i) => 
+                `<div class="result-item" style="animation-delay: ${i * 0.03}s">
+                    <div class="result-rank">${i + 1}</div>
+                    <div class="result-content">
+                        <span class="result-word">${r.word}</span>
+                        <span class="result-count">${r.count}회</span>
+                    </div>
+                </div>`
+            ).join('');
+            document.getElementById('resultsSection').style.display = 'block';
         }
 
+        // 초기화
         function clearResults() {
             document.getElementById('textInput').value = '';
             document.getElementById('resultsSection').style.display = 'none';
