@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Text Geometry</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 40px;
+        background: #000000;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        overflow: auto;
+        gap: 20px;
+      }
+      .main-container {
+        width: 900px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .top-text {
+        color: white;
+        font-size: 24px;
+        text-align: left;
+        font-weight: 300;
+      }
+      #canvas-container {
+        width: 100%;
+        height: 400px;
+        background: #1a1a2e;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(255, 255, 255, 0.1),
+          0 0 20px rgba(102, 126, 234, 0.3);
+        border: 2px solid rgba(102, 126, 234, 0.5);
+        overflow: hidden;
+        position: relative;
+      }
+      .section-title {
+        color: white;
+        font-size: 24px;
+        margin-bottom: 12px;
+        font-weight: 300;
+      }
+      .words-box {
+        width: 100%;
+        height: 200px;
+        background: #1a1a2e;
+        border-radius: 15px;
+        border: 2px solid rgba(102, 126, 234, 0.5);
+        padding: 20px;
+        overflow-y: auto;
+      }
+      .comparison-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .comparison-box {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .comparison-title {
+        color: white;
+        font-size: 24px;
+        font-weight: 500;
+      }
+      .comparison-square {
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        border: 1px solid rgba(102, 126, 234, 0.3);
+      }
+      .comparison-time {
+        color: white;
+        font-size: 18px;
+        font-weight: 300;
+      }
+      /* 스크롤바 스타일 */
+      .words-box::-webkit-scrollbar {
+        width: 8px;
+      }
+      .words-box::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+      }
+      .words-box::-webkit-scrollbar-thumb {
+        background: rgba(102, 126, 234, 0.5);
+        border-radius: 10px;
+      }
+      .words-box::-webkit-scrollbar-thumb:hover {
+        background: rgba(102, 126, 234, 0.7);
+      }
+      #controls {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+      }
+      #textInput {
+        padding: 10px;
+        font-size: 16px;
+        border: 2px solid #667eea;
+        border-radius: 5px;
+        width: 200px;
+        margin-bottom: 10px;
+        display: block;
+      }
+      #updateBtn {
+        padding: 10px 20px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        width: 100%;
+      }
+      #updateBtn:hover {
+        background: #5568d3;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        color: #333;
+        font-weight: bold;
+      }
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 20px;
+        z-index: 50;
+        font-weight: 300;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-container">
+      <!-- 상단 텍스트 -->
+      <div class="top-text">
+        가장 많이 나온 단어: <span id="topWord">3D 구현</span> - 5회
+      </div>
+
+      <!-- 3D 텍스트 박스 -->
+      <div id="canvas-container">
+        <div id="loading">Loading font...</div>
+        <div id="controls" style="display: none">
+          <label for="textInput">Enter Text:</label>
+          <input
+            type="text"
+            id="textInput"
+            value="3D 구현"
+            placeholder="텍스트를 입력하세요"
+          />
+          <button id="updateBtn">Show in 3D</button>
+        </div>
+      </div>
+
+      <!-- 그 외 단어들 섹션 -->
+      <div>
+        <div class="section-title">그 외 단어들</div>
+        <div class="words-box">
+          <!-- 스크롤 가능한 영역 -->
+        </div>
+      </div>
+
+      <!-- WASM vs JS 비교 -->
+      <div class="comparison-container">
+        <div class="comparison-box">
+          <div class="comparison-title">WASM</div>
+          <div class="comparison-square">
+            <span class="comparison-time">1.2s</span>
+          </div>
+        </div>
+        <div class="comparison-box">
+          <div class="comparison-title">JS</div>
+          <div class="comparison-square">
+            <span class="comparison-time">2.4s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+      // ======================================
+      // Three.js 라이브러리 임포트
+      // ======================================
+      import * as THREE from "three"; // Three.js 핵심 라이브러리
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js"; // 마우스로 카메라 회전/줌 컨트롤
+      import { FontLoader } from "three/addons/loaders/FontLoader.js"; // 폰트 파일(.json) 로더
+      import { TextGeometry } from "three/addons/geometries/TextGeometry.js"; // 3D 텍스트 지오메트리 생성
+
+      // ======================================
+      // 1. Scene(장면) 설정
+      // ======================================
+      // Scene: 3D 객체들을 담는 컨테이너 (무대 역할)
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1a1a2e); // 배경색: 어두운 남색
+
+      // ======================================
+      // 2. Camera(카메라) 설정
+      // ======================================
+      // 컨테이너 크기 가져오기
+      const container = document.getElementById("canvas-container");
+      const containerWidth = 900;
+      const containerHeight = 400;
+
+      // PerspectiveCamera: 원근감이 있는 카메라 (사람 눈과 유사)
+      const camera = new THREE.PerspectiveCamera(
+        75, // FOV(시야각): 75도 (넓을수록 광각)
+        containerWidth / containerHeight, // 종횡비 (컨테이너 비율)
+        0.1, // Near clipping plane: 0.1 이내는 렌더링 안함
+        1000 // Far clipping plane: 1000 이상은 렌더링 안함
+      );
+      camera.position.z = 5; // 카메라를 z축으로 5만큼 뒤로 이동 (텍스트가 보이도록)
+
+      // ======================================
+      // 3. Renderer(렌더러) 설정
+      // ======================================
+      // WebGLRenderer: GPU를 이용해 3D 장면을 2D 화면에 그림
+      const renderer = new THREE.WebGLRenderer({ antialias: true }); // antialias: 계단현상 방지
+      renderer.setSize(containerWidth, containerHeight); // 렌더러 크기를 컨테이너 크기에 맞춤
+      renderer.setPixelRatio(window.devicePixelRatio); // 고해상도 디스플레이 대응 (레티나 등)
+
+      // 렌더러의 canvas 요소를 HTML의 #canvas-container에 추가
+      document
+        .getElementById("canvas-container")
+        .appendChild(renderer.domElement);
+
+      // ======================================
+      // 4. OrbitControls(마우스 컨트롤) 설정
+      // ======================================
+      // 마우스 드래그로 카메라를 회전시킬 수 있게 해줌
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true; // 부드러운 감속 효과 활성화
+      controls.dampingFactor = 0.05; // 감속 계수 (낮을수록 더 부드러움)
+
+      // ======================================
+      // 5. 조명(Light) 설정
+      // ======================================
+      // AmbientLight: 전체를 고르게 비추는 환경광 (그림자 없음)
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 흰색, 강도 0.5
+      scene.add(ambientLight);
+
+      // DirectionalLight: 특정 방향에서 비추는 평행광 (태양빛 같은)
+      const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8); // 흰색 광원
+      directionalLight1.position.set(5, 5, 5); // 우측 상단 뒤에서 비춤
+      scene.add(directionalLight1);
+
+      // DirectionalLight2: 반대편에서 핑크빛 조명
+      const directionalLight2 = new THREE.DirectionalLight(0xff00ff, 0.4); // 마젠타 색상
+      directionalLight2.position.set(-5, -5, 5); // 좌측 하단 뒤에서 비춤
+      scene.add(directionalLight2);
+
+      // PointLight: 한 점에서 모든 방향으로 퍼지는 점광원 (전구 같은)
+      const pointLight = new THREE.PointLight(0x00ffff, 1, 100); // 청록색, 강도 1, 거리 100
+      pointLight.position.set(0, 0, 10); // 카메라 뒤쪽에서 비춤
+      scene.add(pointLight);
+
+      // ======================================
+      // 6. 전역 변수 선언
+      // ======================================
+      let textMesh = null; // 3D 텍스트 메시 객체를 담을 변수
+      let font = null; // 로드된 폰트 데이터를 담을 변수
+
+      // ======================================
+      // 7. 배경 파티클(입자) 생성
+      // ======================================
+      // 배경에 떠다니는 별 같은 작은 점들을 생성
+      const particlesGeometry = new THREE.BufferGeometry(); // 빈 지오메트리 생성
+      const particlesCount = 1000; // 파티클 개수: 1000개
+      const posArray = new Float32Array(particlesCount * 3); // x, y, z 좌표 저장 배열 (1000개 * 3 = 3000개 값)
+
+      // 각 파티클의 위치를 랜덤하게 설정
+      for (let i = 0; i < particlesCount * 3; i++) {
+        // Math.random()은 0~1 사이 값
+        // (Math.random() - 0.5)는 -0.5 ~ 0.5 사이 값
+        // * 20 하면 -10 ~ 10 사이로 분포
+        posArray[i] = (Math.random() - 0.5) * 20;
+      }
+
+      // 위치 데이터를 지오메트리에 속성으로 추가
+      particlesGeometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(posArray, 3) // 3개씩 묶어서 x,y,z로 해석
+      );
+
+      // 파티클의 재질(모양, 색상) 설정
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.02, // 점 크기
+        color: 0xffffff, // 흰색
+        transparent: true, // 투명도 사용
+        opacity: 0.6, // 60% 불투명도
+      });
+
+      // 지오메트리 + 재질 = 메시 생성
+      const particlesMesh = new THREE.Points(
+        particlesGeometry,
+        particlesMaterial
+      );
+      scene.add(particlesMesh); // 씬에 파티클 추가
+
+      // ======================================
+      // 함수: createText(inputText)
+      // ======================================
+      // 입력받은 텍스트를 3D로 변환하여 씬에 추가하는 핵심 함수
+      function createText(inputText) {
+        // 1. 폰트가 로드되었는지 확인
+        if (!font) {
+          console.log("Font not loaded yet");
+          return; // 폰트가 없으면 함수 종료
+        }
+
+        console.log("Creating text:", inputText);
+
+        // 2. 기존 텍스트 메시가 있으면 제거 (메모리 누수 방지)
+        if (textMesh) {
+          scene.remove(textMesh); // 씬에서 제거
+
+          // 지오메트리 메모리 해제
+          textMesh.geometry.dispose();
+
+          // 재질 메모리 해제 (배열인 경우와 단일 객체인 경우 모두 처리)
+          if (Array.isArray(textMesh.material)) {
+            textMesh.material.forEach((m) => m.dispose());
+          } else {
+            textMesh.material.dispose();
+          }
+        }
+
+        // 3. 3D 텍스트 지오메트리 생성
+        const textGeometry = new TextGeometry(inputText, {
+          font: font, // 로드된 폰트 객체 사용
+          size: 0.8, // 텍스트 크기 (0.5에서 0.8로 확대)
+          height: 0.3, // 텍스트 두께 (z축 깊이)
+          curveSegments: 12, // 곡선의 부드러움 정도 (높을수록 부드럽지만 느림)
+          bevelEnabled: true, // 모서리 베벨(입체 테두리) 활성화
+          bevelThickness: 0.04, // 베벨의 두께
+          bevelSize: 0.03, // 베벨이 안쪽으로 들어가는 정도
+          bevelOffset: 0, // 베벨 오프셋
+          bevelSegments: 5, // 베벨의 세그먼트 수 (높을수록 부드러움)
+        });
+
+        // 4. 텍스트를 화면 중앙에 배치하기 위한 계산
+        textGeometry.computeBoundingBox(); // 지오메트리의 경계 상자 계산
+        const centerOffset =
+          -0.5 *
+          (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
+        // 텍스트 너비의 절반만큼 왼쪽으로 이동시켜 중앙 정렬
+
+        // 5. 재질(Material) 생성 - 빛을 반사하는 광택 재질
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x00ffff, // 청록색
+          specular: 0xff00ff, // 반사광 색상: 마젠타 (반짝이는 부분의 색)
+          shininess: 100, // 광택도: 높을수록 반짝임
+        });
+
+        // 6. 지오메트리 + 재질 = 메시 생성
+        textMesh = new THREE.Mesh(textGeometry, material);
+
+        // 7. 텍스트 위치 설정
+        textMesh.position.x = centerOffset; // 중앙 정렬
+        textMesh.position.y = 0; // y축 중앙
+        textMesh.position.z = 0; // z축 중앙
+
+        // 8. 씬에 텍스트 추가
+        scene.add(textMesh);
+        console.log("Text added to scene");
+      }
+
+      // ======================================
+      // 폰트 로딩
+      // ======================================
+      const loader = new FontLoader(); // 폰트 로더 생성
+      loader.load(
+        "./fonts/NanumMyeongjo_Regular.json", // 로드할 폰트 파일 경로 (한글 지원)
+
+        // 성공 콜백: 폰트 로딩이 완료되면 실행
+        function (loadedFont) {
+          font = loadedFont; // 전역 변수에 폰트 저장
+          document.getElementById("loading").style.display = "none"; // "Loading..." 메시지 숨김
+          document.getElementById("controls").style.display = "block"; // 입력 컨트롤 표시
+          createText(document.getElementById("textInput").value); // 기본 텍스트 생성
+        },
+
+        // 진행 콜백: 로딩 중 진행률 표시 (옵션)
+        function (xhr) {
+          console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+          // xhr.loaded: 현재까지 로드된 바이트
+          // xhr.total: 전체 파일 크기
+        },
+
+        // 에러 콜백: 로딩 실패 시 실행
+        function (err) {
+          console.error("An error happened loading the font:", err);
+          document.getElementById("loading").textContent = "Error loading font";
+        }
+      );
+
+      // ======================================
+      // 이벤트 리스너 등록
+      // ======================================
+
+      // 버튼 클릭 이벤트: "Show in 3D" 버튼을 누르면 텍스트 생성
+      document.getElementById("updateBtn").addEventListener("click", () => {
+        const inputText = document.getElementById("textInput").value; // 입력창의 값 가져오기
+        if (inputText.trim()) {
+          // 공백 제거 후 빈 문자열이 아니면
+          createText(inputText.trim()); // 3D 텍스트 생성
+          document.getElementById("topWord").textContent = inputText.trim(); // 상단 텍스트 업데이트
+        }
+      });
+
+      // Enter 키 이벤트: 입력창에서 Enter를 누르면 버튼 클릭과 동일하게 동작
+      document.getElementById("textInput").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          // Enter 키를 눌렀으면
+          document.getElementById("updateBtn").click(); // 버튼 클릭 이벤트 발생
+        }
+      });
+
+      // ======================================
+      // 함수: animate()
+      // ======================================
+      // 매 프레임마다 실행되는 애니메이션 루프 (게임 루프)
+      function animate() {
+        // requestAnimationFrame: 브라우저에게 다음 프레임에 이 함수를 다시 호출하도록 요청
+        // 보통 60fps (1초에 60번 호출)
+        requestAnimationFrame(animate);
+
+        // 텍스트 메시가 존재하면 둥둥 떠다니는 애니메이션 적용
+        if (textMesh) {
+          // Y축 위치를 사인파로 움직여서 위아래로 둥둥 떠다니는 효과
+          textMesh.position.y = Math.sin(Date.now() * 0.001) * 0.15;
+          // Date.now(): 현재 시간(밀리초)
+          // * 0.001: 초 단위로 변환 (느린 움직임)
+          // Math.sin(): 사인파 (-1 ~ 1 사이 값)
+          // * 0.15: 진폭 조절 (위아래로 0.15 유닛씩 이동)
+        }
+
+        // 배경 파티클도 천천히 회전
+        particlesMesh.rotation.y += 0.0005; // 텍스트보다 10배 느리게
+
+        // OrbitControls 업데이트 (damping 효과 적용)
+        controls.update();
+
+        // 씬을 카메라 시점으로 렌더링 (화면에 그리기)
+        renderer.render(scene, camera);
+      }
+
+      // 애니메이션 루프 시작
+      animate();
+
+      // ======================================
+      // 윈도우 리사이즈 이벤트 (박스 크기 고정이므로 제거)
+      // ======================================
+    </script>
+  </body>
+</html>

@@ -259,8 +259,25 @@
       <div class="card">
         <textarea
           id="textInput"
-          placeholder="분석할 텍스트를 입력해주세요..."
+          placeholder="분석할 텍스트를 입력하거나 파일을 업로드해주세요..."
         ></textarea>
+
+        <div style="margin-bottom: 16px">
+          <input
+            type="file"
+            id="fileInput"
+            accept=".txt"
+            style="display: none"
+            onchange="handleFileUpload(event)"
+          />
+          <button
+            class="secondary"
+            onclick="document.getElementById('fileInput').click()"
+            style="width: 100%"
+          >
+            텍스트 파일 업로드
+          </button>
+        </div>
 
         <div class="controls">
           <button id="analyzeBtn" onclick="analyzeText()" disabled>
@@ -400,9 +417,36 @@
         }
       }
 
+      // 파일 업로드 처리
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.type !== "text/plain" && !file.name.endsWith(".txt")) {
+          showStatus("txt 파일만 업로드 가능합니다.", "error");
+          return;
+        }
+
+        showStatus("파일 읽는 중...", "info");
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+          const text = e.target.result;
+          document.getElementById("textInput").value = text;
+          showStatus(`파일 "${file.name}" 로드 완료!`, "info");
+        };
+
+        reader.onerror = () => {
+          showStatus("파일 읽기 실패", "error");
+        };
+
+        reader.readAsText(file, "UTF-8");
+      }
+
       // 초기화
       function clearResults() {
         document.getElementById("textInput").value = "";
+        document.getElementById("fileInput").value = "";
         document.getElementById("resultsSection").style.display = "none";
         document.getElementById("topWordSection").style.display = "none";
         showStatus("", "info");
