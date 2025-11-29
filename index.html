@@ -259,7 +259,7 @@
       <div class="card">
         <textarea
           id="textInput"
-          placeholder="분석할 텍스트를 입력하거나 파일을 업로드해주세요..."
+          placeholder="분석할 텍스트를 입력하거나 txt 파일을 업로드 해주세요"
         ></textarea>
 
         <div style="margin-bottom: 16px">
@@ -349,7 +349,13 @@
       // 전체 분석 (WASM vs JS 성능 비교)
       async function analyzeText() {
         const text = document.getElementById("textInput").value.trim();
-        if (!text || !wasmModule) return;
+        if (!text || !wasmModule) {
+          showStatus(
+            "분석할 텍스트를 입력하거나 txt 파일을 업로드 해주세요",
+            "error"
+          );
+          return;
+        }
 
         try {
           showStatus("분석 중...", "info");
@@ -377,7 +383,13 @@
       // 상위 10개 단어 분석
       async function getTop10() {
         const text = document.getElementById("textInput").value.trim();
-        if (!text || !wasmModule) return;
+        if (!text || !wasmModule) {
+          showStatus(
+            "분석할 텍스트를 입력하거나 txt 파일을 업로드 해주세요",
+            "error"
+          );
+          return;
+        }
 
         try {
           showStatus("분석 중...", "info");
