@@ -139,8 +139,14 @@
         color: #191f28;
         font-size: 20px;
         font-weight: 700;
-        margin-bottom: 16px;
+        margin-bottom: 8px;
         letter-spacing: -0.3px;
+      }
+      .results-notice {
+        color: #8b95a1;
+        font-size: 13px;
+        margin-bottom: 16px;
+        margin-top: 0;
       }
       .result-item {
         display: flex;
@@ -303,6 +309,7 @@
 
       <div class="results card" id="resultsSection" style="display: none">
         <h2>분석 결과</h2>
+        <p class="results-notice">1MB 이상의 대용량 파일은 상위 10개만 표시됩니다</p>
         <div id="resultsBody"></div>
       </div>
     </div>
@@ -312,6 +319,7 @@
     <script>
       let wasmModule = null;
       let uploadedFileText = null; // 업로드된 파일의 텍스트를 저장
+      let uploadedFileSize = 0; // 업로드된 파일의 크기 (바이트)
 
       // WASM 모듈 초기화
       window.addEventListener("load", async () => {
@@ -368,11 +376,19 @@
           analyzeFrequencyJS(text);
           const jsTime = (performance.now() - jsStart).toFixed(2);
 
-          displayResults(wasmResults);
-          showStatus(
-            `분석 완료! 총 ${wasmResults.length}개 (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`,
-            "info"
-          );
+          // 1MB 이상의 파일이 업로드된 경우, 최대 10개만 표시
+          const MB_1 = 1 * 1024 * 1024;
+          const isLargeFile = uploadedFileText && uploadedFileSize > MB_1;
+          const displayLimit = isLargeFile ? 10 : wasmResults.length;
+          const resultsToDisplay = wasmResults.slice(0, displayLimit);
+
+          displayResults(resultsToDisplay);
+
+          const statusMessage = isLargeFile
+            ? `분석 완료! 상위 ${displayLimit}개 표시 (전체 ${wasmResults.length}개) (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`
+            : `분석 완료! 총 ${wasmResults.length}개 (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`;
+
+          showStatus(statusMessage, "info");
         } catch (error) {
           showStatus("분석 실패: " + error.message, "error");
         }
@@ -434,6 +450,9 @@
           return;
         }
 
+        // 파일 크기 저장 (바이트)
+        uploadedFileSize = file.size;
+
         showStatus("파일 읽는 중...", "info");
         const reader = new FileReader();
 
@@ -449,7 +468,8 @@
           textInput.disabled = true;
           textInput.placeholder = "파일 업로드 완료";
 
-          showStatus(`파일 "${file.name}" 로드 완료!`, "info");
+          const fileSizeMB = (uploadedFileSize / (1024 * 1024)).toFixed(2);
+          showStatus(`파일 "${file.name}" 로드 완료! (${fileSizeMB}MB)`, "info");
         };
 
         reader.onerror = () => {
@@ -471,6 +491,7 @@
         // 파일 입력 및 저장된 텍스트 초기화
         document.getElementById("fileInput").value = "";
         uploadedFileText = null;
+        uploadedFileSize = 0;
 
         // 결과 화면 숨기기
         document.getElementById("resultsSection").style.display = "none";
