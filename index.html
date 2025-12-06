@@ -366,29 +366,36 @@
         try {
           showStatus("분석 중...", "info");
 
-          const wasmStart = performance.now();
-          const wasmResults = vectorToArray(
-            wasmModule.getFrequencyAnalysis(text)
-          );
-          const wasmTime = (performance.now() - wasmStart).toFixed(2);
+          // UI 업데이트를 위한 시간 확보
+          setTimeout(() => {
+            try {
+              const wasmStart = performance.now();
+              const wasmResults = vectorToArray(
+                wasmModule.getFrequencyAnalysis(text)
+              );
+              const wasmTime = (performance.now() - wasmStart).toFixed(2);
 
-          const jsStart = performance.now();
-          analyzeFrequencyJS(text);
-          const jsTime = (performance.now() - jsStart).toFixed(2);
+              const jsStart = performance.now();
+              analyzeFrequencyJS(text);
+              const jsTime = (performance.now() - jsStart).toFixed(2);
 
-          // 1MB 이상의 파일이 업로드된 경우, 최대 10개만 표시
-          const MB_1 = 1 * 1024 * 1024;
-          const isLargeFile = uploadedFileText && uploadedFileSize > MB_1;
-          const displayLimit = isLargeFile ? 10 : wasmResults.length;
-          const resultsToDisplay = wasmResults.slice(0, displayLimit);
+              // 1MB 이상의 파일이 업로드된 경우, 최대 10개만 표시
+              const MB_1 = 1 * 1024 * 1024;
+              const isLargeFile = uploadedFileText && uploadedFileSize > MB_1;
+              const displayLimit = isLargeFile ? 10 : wasmResults.length;
+              const resultsToDisplay = wasmResults.slice(0, displayLimit);
 
-          displayResults(resultsToDisplay);
+              displayResults(resultsToDisplay);
 
-          const statusMessage = isLargeFile
-            ? `분석 완료! 상위 ${displayLimit}개 표시 (전체 ${wasmResults.length}개) (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`
-            : `분석 완료! 총 ${wasmResults.length}개 (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`;
+              const statusMessage = isLargeFile
+                ? `분석 완료! 상위 ${displayLimit}개 표시 (전체 ${wasmResults.length}개) (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`
+                : `분석 완료! 총 ${wasmResults.length}개 (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`;
 
-          showStatus(statusMessage, "info");
+              showStatus(statusMessage, "info");
+            } catch (error) {
+              showStatus("분석 실패: " + error.message, "error");
+            }
+          }, 50);
         } catch (error) {
           showStatus("분석 실패: " + error.message, "error");
         }
@@ -404,9 +411,17 @@
 
         try {
           showStatus("분석 중...", "info");
-          const results = vectorToArray(wasmModule.getFrequencyAnalysis(text));
-          displayResults(results.slice(0, 10));
-          showStatus("상위 10개 단어 분석 완료!", "info");
+
+          // UI 업데이트를 위한 시간 확보
+          setTimeout(() => {
+            try {
+              const results = vectorToArray(wasmModule.getFrequencyAnalysis(text));
+              displayResults(results.slice(0, 10));
+              showStatus("상위 10개 단어 분석 완료!", "info");
+            } catch (error) {
+              showStatus("분석 실패: " + error.message, "error");
+            }
+          }, 50);
         } catch (error) {
           showStatus("분석 실패: " + error.message, "error");
         }
