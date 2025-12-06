@@ -139,8 +139,14 @@
         color: #191f28;
         font-size: 20px;
         font-weight: 700;
-        margin-bottom: 16px;
+        margin-bottom: 8px;
         letter-spacing: -0.3px;
+      }
+      .results-notice {
+        color: #8b95a1;
+        font-size: 13px;
+        margin-bottom: 16px;
+        margin-top: 0;
       }
       .result-item {
         display: flex;
@@ -303,6 +309,7 @@
 
       <div class="results card" id="resultsSection" style="display: none">
         <h2>분석 결과</h2>
+        <p class="results-notice">1MB 이상의 대용량 파일은 상위 10개만 표시됩니다</p>
         <div id="resultsBody"></div>
       </div>
     </div>
@@ -311,6 +318,8 @@
     <script src="js/text_frequency_js.js"></script>
     <script>
       let wasmModule = null;
+      let uploadedFileText = null; // 업로드된 파일의 텍스트를 저장
+      let uploadedFileSize = 0; // 업로드된 파일의 크기 (바이트)
 
       // WASM 모듈 초기화
       window.addEventListener("load", async () => {
@@ -348,27 +357,45 @@
 
       // 전체 분석 (WASM vs JS 성능 비교)
       async function analyzeText() {
-        const text = document.getElementById("textInput").value.trim();
+        // textarea에 값이 있으면 사용, 없으면 업로드된 파일 텍스트 사용
+        const textInputValue = document.getElementById("textInput").value.trim();
+        const text = textInputValue || uploadedFileText;
+
         if (!text || !wasmModule) return;
 
         try {
           showStatus("분석 중...", "info");
 
-          const wasmStart = performance.now();
-          const wasmResults = vectorToArray(
-            wasmModule.getFrequencyAnalysis(text)
-          );
-          const wasmTime = (performance.now() - wasmStart).toFixed(2);
+          // UI 업데이트를 위한 시간 확보
+          setTimeout(() => {
+            try {
+              const wasmStart = performance.now();
+              const wasmResults = vectorToArray(
+                wasmModule.getFrequencyAnalysis(text)
+              );
+              const wasmTime = (performance.now() - wasmStart).toFixed(2);
 
-          const jsStart = performance.now();
-          analyzeFrequencyJS(text);
-          const jsTime = (performance.now() - jsStart).toFixed(2);
+              const jsStart = performance.now();
+              analyzeFrequencyJS(text);
+              const jsTime = (performance.now() - jsStart).toFixed(2);
 
-          displayResults(wasmResults);
-          showStatus(
-            `분석 완료! 총 ${wasmResults.length}개 (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`,
-            "info"
-          );
+              // 1MB 이상의 파일이 업로드된 경우, 최대 10개만 표시
+              const MB_1 = 1 * 1024 * 1024;
+              const isLargeFile = uploadedFileText && uploadedFileSize > MB_1;
+              const displayLimit = isLargeFile ? 10 : wasmResults.length;
+              const resultsToDisplay = wasmResults.slice(0, displayLimit);
+
+              displayResults(resultsToDisplay);
+
+              const statusMessage = isLargeFile
+                ? `분석 완료! 상위 ${displayLimit}개 표시 (전체 ${wasmResults.length}개) (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`
+                : `분석 완료! 총 ${wasmResults.length}개 (WASM: ${wasmTime}ms | JS: ${jsTime}ms)`;
+
+              showStatus(statusMessage, "info");
+            } catch (error) {
+              showStatus("분석 실패: " + error.message, "error");
+            }
+          }, 50);
         } catch (error) {
           showStatus("분석 실패: " + error.message, "error");
         }
@@ -376,14 +403,25 @@
 
       // 상위 10개 단어 분석
       async function getTop10() {
-        const text = document.getElementById("textInput").value.trim();
+        // textarea에 값이 있으면 사용, 없으면 업로드된 파일 텍스트 사용
+        const textInputValue = document.getElementById("textInput").value.trim();
+        const text = textInputValue || uploadedFileText;
+
         if (!text || !wasmModule) return;
 
         try {
           showStatus("분석 중...", "info");
-          const results = vectorToArray(wasmModule.getFrequencyAnalysis(text));
-          displayResults(results.slice(0, 10));
-          showStatus("상위 10개 단어 분석 완료!", "info");
+
+          // UI 업데이트를 위한 시간 확보
+          setTimeout(() => {
+            try {
+              const results = vectorToArray(wasmModule.getFrequencyAnalysis(text));
+              displayResults(results.slice(0, 10));
+              showStatus("상위 10개 단어 분석 완료!", "info");
+            } catch (error) {
+              showStatus("분석 실패: " + error.message, "error");
+            }
+          }, 50);
         } catch (error) {
           showStatus("분석 실패: " + error.message, "error");
         }
@@ -427,13 +465,26 @@
           return;
         }
 
+        // 파일 크기 저장 (바이트)
+        uploadedFileSize = file.size;
+
         showStatus("파일 읽는 중...", "info");
         const reader = new FileReader();
 
         reader.onload = (e) => {
           const text = e.target.result;
-          document.getElementById("textInput").value = text;
-          showStatus(`파일 "${file.name}" 로드 완료!`, "info");
+          const textInput = document.getElementById("textInput");
+
+          // 파일 텍스트를 별도 변수에 저장
+          uploadedFileText = text;
+
+          // textarea 비우기 및 disabled 처리
+          textInput.value = "";
+          textInput.disabled = true;
+          textInput.placeholder = "파일 업로드 완료";
+
+          const fileSizeMB = (uploadedFileSize / (1024 * 1024)).toFixed(2);
+          showStatus(`파일 "${file.name}" 로드 완료! (${fileSizeMB}MB)`, "info");
         };
 
         reader.onerror = () => {
@@ -445,10 +496,22 @@
 
       // 초기화
       function clearResults() {
-        document.getElementById("textInput").value = "";
+        const textInput = document.getElementById("textInput");
+
+        // textarea 초기화 및 활성화
+        textInput.value = "";
+        textInput.disabled = false;
+        textInput.placeholder = "분석할 텍스트를 입력하거나 파일을 업로드해주세요...";
+
+        // 파일 입력 및 저장된 텍스트 초기화
         document.getElementById("fileInput").value = "";
+        uploadedFileText = null;
+        uploadedFileSize = 0;
+
+        // 결과 화면 숨기기
         document.getElementById("resultsSection").style.display = "none";
         document.getElementById("topWordSection").style.display = "none";
+
         showStatus("초기화 완료!", "info");
       }
     </script>
