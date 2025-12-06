@@ -311,6 +311,7 @@
     <script src="js/text_frequency_js.js"></script>
     <script>
       let wasmModule = null;
+      let uploadedFileText = null; // 업로드된 파일의 텍스트를 저장
 
       // WASM 모듈 초기화
       window.addEventListener("load", async () => {
@@ -348,7 +349,10 @@
 
       // 전체 분석 (WASM vs JS 성능 비교)
       async function analyzeText() {
-        const text = document.getElementById("textInput").value.trim();
+        // textarea에 값이 있으면 사용, 없으면 업로드된 파일 텍스트 사용
+        const textInputValue = document.getElementById("textInput").value.trim();
+        const text = textInputValue || uploadedFileText;
+
         if (!text || !wasmModule) return;
 
         try {
@@ -376,7 +380,10 @@
 
       // 상위 10개 단어 분석
       async function getTop10() {
-        const text = document.getElementById("textInput").value.trim();
+        // textarea에 값이 있으면 사용, 없으면 업로드된 파일 텍스트 사용
+        const textInputValue = document.getElementById("textInput").value.trim();
+        const text = textInputValue || uploadedFileText;
+
         if (!text || !wasmModule) return;
 
         try {
@@ -432,7 +439,16 @@
 
         reader.onload = (e) => {
           const text = e.target.result;
-          document.getElementById("textInput").value = text;
+          const textInput = document.getElementById("textInput");
+
+          // 파일 텍스트를 별도 변수에 저장
+          uploadedFileText = text;
+
+          // textarea 비우기 및 disabled 처리
+          textInput.value = "";
+          textInput.disabled = true;
+          textInput.placeholder = "파일 업로드 완료";
+
           showStatus(`파일 "${file.name}" 로드 완료!`, "info");
         };
 
@@ -445,10 +461,21 @@
 
       // 초기화
       function clearResults() {
-        document.getElementById("textInput").value = "";
+        const textInput = document.getElementById("textInput");
+
+        // textarea 초기화 및 활성화
+        textInput.value = "";
+        textInput.disabled = false;
+        textInput.placeholder = "분석할 텍스트를 입력하거나 파일을 업로드해주세요...";
+
+        // 파일 입력 및 저장된 텍스트 초기화
         document.getElementById("fileInput").value = "";
+        uploadedFileText = null;
+
+        // 결과 화면 숨기기
         document.getElementById("resultsSection").style.display = "none";
         document.getElementById("topWordSection").style.display = "none";
+
         showStatus("초기화 완료!", "info");
       }
     </script>
