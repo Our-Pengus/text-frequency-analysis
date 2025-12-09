@@ -22,20 +22,91 @@ struct FrequencyResult {
 
  // 불용어(stopwords) 목록
  // 한국어 조사/연결어 제거
- // 영어 관사/전치사/대명사 제거
 static const unordered_set<string> STOPWORDS = {
-    // 한국어
     "은","는","이","가","을","를","에","에서","에게","으로","으로써","부터","까지",
     "와","과","도","만","및","등","때문에","위해","통해","또는","또한","또","때에","바에",
     "모든","대한","그리고", "그러나", "하지만"
-
-    // 영어
-    "the","a","an","and","or","but","to","of","in","on","for","with","as","at","by",
-    "is","are","was","were","be","been","being",
-    "this","that","these","those",
-    "it","its","i","you","he","she","we","they","them","my","your","our","their"
 };
 
+
+// 언어 타입 구분
+enum class LanguageType {
+    ENGLISH,    // 영어 (ASCII)
+    HANGUL,     // 한글
+    OTHER       // 기타 언어 (중국어, 일본어 등)
+};
+
+// UTF-8 바이트가 한글 범위인지 체크
+// 한글 완성형: U+AC00 (가) ~ U+D7A3 (힣)
+// UTF-8 인코딩: 0xEA 0xB0 0x80 ~ 0xED 0x9E 0xA3
+bool isHangulUTF8Byte(const string& s, size_t pos) {
+    if (pos + 2 >= s.size()) return false;  // 3바이트가 필요하므로 pos+2까지 접근 가능해야 함
+    
+    unsigned char b1 = static_cast<unsigned char>(s[pos]);
+    unsigned char b2 = static_cast<unsigned char>(s[pos + 1]);
+    unsigned char b3 = static_cast<unsigned char>(s[pos + 2]);
+    
+    // UTF-8 3바이트 문자 체크 (0xE0 ~ 0xEF로 시작)
+    if ((b1 & 0xF0) != 0xE0) return false;
+    if ((b2 & 0xC0) != 0x80) return false;
+    if ((b3 & 0xC0) != 0x80) return false;
+    
+    // 한글 범위 체크: 0xEA 0xB0 0x80 ~ 0xED 0x9E 0xA3
+    if (b1 == 0xEA) {
+        // 0xEA 0xB0 0x80 ~ 0xEA 0xBF 0xBF
+        return b2 >= 0xB0;
+    } else if (b1 == 0xEB || b1 == 0xEC) {
+        // 0xEB 0x80 0x80 ~ 0xEC 0xBF 0xBF
+        return true;
+    } else if (b1 == 0xED) {
+        // 0xED 0x80 0x80 ~ 0xED 0x9E 0xA3
+        if (b2 < 0x9E) return true;
+        if (b2 == 0x9E) return b3 <= 0xA3;
+        return false;
+    }
+    
+    return false;
+}
+
+// 단어의 언어 타입 판별
+LanguageType detectLanguage(const string& w) {
+    if (w.empty()) return LanguageType::OTHER;
+    
+    bool hasHangul = false;
+    bool hasNonAscii = false;
+    
+    for (size_t i = 0; i < w.size(); ) {
+        unsigned char c = static_cast<unsigned char>(w[i]);
+        
+        if (c < 128) {
+            // ASCII 문자 (영어/숫자)
+            i++;
+        } else {
+            // 비-ASCII 문자
+            hasNonAscii = true;
+            
+            if (isHangulUTF8Byte(w, i)) {
+                hasHangul = true;
+                i += 3; // UTF-8 한글은 3바이트
+            } else {
+                // UTF-8 멀티바이트 문자 길이 계산
+                if ((c & 0xE0) == 0xC0) i += 2;
+                else if ((c & 0xF0) == 0xE0) i += 3;
+                else if ((c & 0xF8) == 0xF0) i += 4;
+                else i++; // 잘못된 바이트는 건너뛰기
+            }
+        }
+    }
+    
+    // 한글이 하나라도 있으면 한글로 판단
+    if (hasHangul) return LanguageType::HANGUL;
+    
+    // ASCII만 있으면 영어
+    if (!hasNonAscii) return LanguageType::ENGLISH;
+    
+    // 그 외는 기타 언어
+    return LanguageType::OTHER;
+}
 
 //앞뒤 구두점 제거
 string trimPunct(const string& w) {
@@ -50,23 +121,44 @@ string trimPunct(const string& w) {
 
 
  // 단어 정규화
- // - 영어는 소문자 변환
- // - 숫자/영문만 허용
- // - 한글은 그대로 통과
+ // - 한글만 처리
+ // - 한글이 아니면 빈 문자열 반환
 string normalizeWord(const string& w) {
     string t = trimPunct(w);
+    if (t.empty()) return t;
+    
+    // 한글이 아니면 빈 문자열 반환
+    if (detectLanguage(t) != LanguageType::HANGUL) {
+        return "";
+    }
+    
+    // 한글: UTF-8 멀티바이트 문자를 올바르게 처리
     string r;
     r.reserve(t.size());
-
-    for (unsigned char c : t) {
+    
+    for (size_t i = 0; i < t.size(); ) {
+        unsigned char c = static_cast<unsigned char>(t[i]);
+        
         if (c < 128) {
-            // 영어/숫자
-            if (isalnum(c)) r.push_back(tolower(c));
+            // ASCII 문자는 제거 (한글만 처리)
+            i++;
         } else {
-            // 한글 그대로
-            r.push_back(c);
+            // UTF-8 멀티바이트 문자 처리
+            size_t charLen = 1;
+            if ((c & 0xE0) == 0xC0) charLen = 2;
+            else if ((c & 0xF0) == 0xE0) charLen = 3;
+            else if ((c & 0xF8) == 0xF0) charLen = 4;
+            
+            if (i + charLen <= t.size()) {
+                // 멀티바이트 문자 전체를 복사
+                r.append(t.substr(i, charLen));
+                i += charLen;
+            } else {
+                i++;
+            }
         }
     }
+    
     return r;
 }
 
@@ -79,6 +171,11 @@ bool endsWith(const string& s, const string& suf) {
 
 // 조사 제거 (한국어 전용)
 string stripJosa(const string& w) {
+    // 한글이 아니면 조사 제거하지 않음
+    if (detectLanguage(w) != LanguageType::HANGUL) {
+        return w;
+    }
+    
     static const vector<string> JO_ENDINGS = {
         // 기본 조사
         "은","는","이","가","을","를","에","에서","에게",
@@ -115,40 +212,16 @@ string stripJosa(const string& w) {
 bool isKeyword(const string& w) {
     if (w.empty()) return false;
 
-    // 1. 공통: 불용어면 바로 제외
+    // 한글이 아니면 제외
+    if (detectLanguage(w) != LanguageType::HANGUL) {
+        return false;
+    }
+
+    // 1. 불용어면 바로 제외
     if (STOPWORDS.find(w) != STOPWORDS.end())
         return false;
 
-    // 2. 영어/한글 구분
-    bool isAscii = true;
-    for (unsigned char c : w) {
-        if (c >= 128) {
-            isAscii = false;
-            break;
-        }
-    }
-
-    // ---------- 영어 처리 ----------
-    if (isAscii) {
-        // 1~2글자짜리 영어 단어는 정보가 거의 없으니 제거
-        if (w.size() <= 2) return false;
-
-        // 숫자만으로 구성된 토큰은 제거 (연도, 페이지 번호 등)
-        bool allDigit = true;
-        for (unsigned char c : w) {
-            if (!isdigit(c)) {
-                allDigit = false;
-                break;
-            }
-        }
-        if (allDigit) return false;
-
-        // 그 외 영어 단어는 일단 키워드로 인정
-        return true;
-    }
-
-    // ---------- 한국어 처리 ----------
-    // 한글 1글자(≈3바이트)이하 제거
+    // 2. 한글 1글자(≈3바이트)이하 제거
     if (w.size() <= 3) return false;
 
     // (1) 동사/형용사/부사/연결 표현 느낌의 금지 끝말 제거
