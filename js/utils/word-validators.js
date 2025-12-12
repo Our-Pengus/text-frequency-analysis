@@ -32,7 +32,7 @@ export function isStopword(word) {
  * @param {number} minLength - 최소 길이 (기본값: 2)
  * @returns {boolean}
  */
-export function meetsMinLength(word, minLength = 2) {
+export function checkMinLength(word, minLength = 2) {
   return word.length >= minLength;
 }
 
@@ -89,7 +89,7 @@ export function isValidKeyword(word) {
   if (isStopword(word)) return false;
 
   // 2. 최소 길이 체크
-  if (!meetsMinLength(word)) return false;
+  if (!checkMinLength(word)) return false;
 
   // 3. 기능 명사 제외
   if (isFunctionNoun(word)) return false;
