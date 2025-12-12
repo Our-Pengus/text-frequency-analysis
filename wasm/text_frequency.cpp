@@ -21,11 +21,17 @@ struct FrequencyResult {
 
 
  // 불용어(stopwords) 목록
- // 한국어 조사/연결어 제거
 static const unordered_set<string> STOPWORDS = {
-    "은","는","이","가","을","를","에","에서","에게","으로","으로써","부터","까지",
-    "와","과","도","만","및","등","때문에","위해","통해","또는","또한","또","때에","바에",
-    "모든","대한","그리고", "그러나", "하지만"
+    // 접속/연결/서술어
+    "그리고","그러나","하지만","또는","또한","또","때문에","위해",
+    "통해","등","및","대한","대하여","관하여","모든","이르되","말하되","가로되",
+    "때에","위하여","함께","이는"
+
+    // 지시어/대명사/의문사
+    "그","이","저","그들","그녀","자기","그것","이것","저것",
+    "너","너희","너희들","나","우리","우리들","저희","저희들",
+    "누구","무엇","어디","언제","어느","어떤","이런","저런","그런",
+    "내","네"
 };
 
 
@@ -168,41 +174,42 @@ bool endsWith(const string& s, const string& suf) {
     return equal(suf.rbegin(), suf.rend(), s.rbegin());
 }
 
+// 한글 1글자(UTF-8 3바이트) 제거
+string dropLastHangulChar(const string& w) {
+    if (w.size() < 3) return w;
 
-// 조사 제거 (한국어 전용)
+    size_t pos = w.size() - 3;
+    // 마지막 3바이트가 한글 완성형인지 체크
+    if (!isHangulUTF8Byte(w, pos)) return w;
+
+    return w.substr(0, pos);
+}
+
 string stripJosa(const string& w) {
-    // 한글이 아니면 조사 제거하지 않음
-    if (detectLanguage(w) != LanguageType::HANGUL) {
-        return w;
-    }
-    
-    static const vector<string> JO_ENDINGS = {
-        // 기본 조사
-        "은","는","이","가","을","를","에","에서","에게",
-        "으로","로","으로써","부터","까지",
-        "와","과","도","만",
-
-        // 보조적 요소
-        "께서","조차","마저","뿐","마다",
-
-        // 소유/복수
-        "의","들","들은","들이","라도","까지의","부터의"
-    };
+    if (detectLanguage(w) != LanguageType::HANGUL) return w;
 
     string base = w;
 
-    bool stripped = true;
-    // 여러 개 겹쳐 붙은 경우도 있으니 반복해서 잘라줌
-    while (stripped) {
-        stripped = false;
+    static const vector<string> JOSA = {
+        "에게서는","에게서","께서는","으로써는","으로는","부터는","까지는",
+        "에게는","에게도","에서는","에서의","으로써","으로도","로는","로도",
+        "부터도","까지도","께서",
+        "와는","와도","과는","과도","의는","의가","에는","에도","에만",
+        "을은","를은","이는","이가","가는",
+        "들의","들은","들이",
+        "에게","에서","으로","부터","까지","라도","조차","마저","마다",
+        "에","의","께","과","와","을","를","은","는","이","가","도","만","들","뿐"
+    };
 
-        for (const auto& suf : JO_ENDINGS) {
-            if (base.size() > suf.size() && endsWith(base, suf)) {
-                base = base.substr(0, base.size() - suf.size());
-                stripped = true;
-                break;
-            }
+    for (const auto& suf : JOSA) {
+        if (base.size() <= suf.size()) continue;
+        if (!endsWith(base, suf)) continue;
+        if (suf.size() == 3) {
+            if (base.size() < 9) continue;
         }
+
+        base = base.substr(0, base.size() - suf.size());
+        break;
     }
 
     return base;
@@ -216,6 +223,19 @@ bool isKeyword(const string& w) {
     if (detectLanguage(w) != LanguageType::HANGUL) {
         return false;
     }
+
+    // 0. 대명사/지시어 + 조사 형태 제외
+    static const unordered_set<string> PRON_FORMS = {
+        "그의","그는","그가","그를","그에","그와","그도","그만",
+        "내가","나는","나를","나의","나에","나와","나도","나만",
+        "너는","너가","너를","너의","너에","너와","너도","너만",
+        "우리는","우리가","우리를","우리의","우리에","우리와","우리도","우리만",
+        "저는","제가","저를","저의","저에","저와","저도","저만",
+        "이는","이가","이를","이에","이의","이와","이도","이만"
+        "바에","바를","바의","바도"
+    };
+    if (PRON_FORMS.find(w) != PRON_FORMS.end()) 
+        return false;
 
     // 1. 불용어면 바로 제외
     if (STOPWORDS.find(w) != STOPWORDS.end())
@@ -232,14 +252,12 @@ bool isKeyword(const string& w) {
         "하는","되는","있는","없는",
         "하며","하면서","하면서도",
         "하고","되고","해도","되어도",
+        "한","된","인","적","적인",
+        "같은","으로","에서","에게",
+        "의하여","의해","따라","대해"
 
         // 부사/연결
-        "처럼","같이","대로","마다","라도","부터","까지","만큼",
-
-        // 관형사/연결 표현
-        "어떤","이런","저런","그런",
-        "정하여","정하는","관하여","정하",
-        "위하여","대하여","관한","관련한"
+        "처럼","같이","대로","마다","라도","만큼"
     };
 
     for (const auto& suf : NG_ENDINGS) {
@@ -247,13 +265,9 @@ bool isKeyword(const string& w) {
             return false;
     }
 
-    // (1-1) "…한"으로 끝나는 관형사형 제거 (필요한, 관련한, 정한 등)
-    if (w.size() >= 6 && endsWith(w, "한"))
-        return false;
-
     // (2) 의미가 약한 기능 명사 제거
     static const unordered_set<string> FUNCTION_NOUNS = {
-        "것","수","때","등","측","부분","경우","정도","우리","기타","이상",
+        "바","것","수","때","등","측","부분","경우","정도","이상"
     };
     if (FUNCTION_NOUNS.find(w) != FUNCTION_NOUNS.end())
         return false;
@@ -262,15 +276,14 @@ bool isKeyword(const string& w) {
     if (w.size() >= 6 && endsWith(w, "다"))
         return false;
 
-    // (4) 명사 접미사 패턴: 명사 가능성 매우 높음
-    static const vector<string> STRONG_NOUN_SUFFIX = {
-        "제도","정책","사회","문제","관","법","권","성","화","율","률","력",
-        "자","자들","인","학","론","점","상","안","주의","주의성","체제","구조","기구","기관","단체","운동"
+    // (4) 어간 잔재 제거
+    static const vector<string> STEM_LIKE_ENDINGS = {
+        "하","되","있","없","같"
     };
-
-    for (const auto& suf : STRONG_NOUN_SUFFIX) {
-        if (endsWith(w, suf))
-            return true;
+    
+    for (const auto& suf : STEM_LIKE_ENDINGS) {
+        if (w.size() >= suf.size() + 3 && endsWith(w, suf)) // 최소 2글자 이상 정도
+            return false;
     }
 
     return true;
@@ -290,6 +303,8 @@ vector<FrequencyResult> analyzeFrequency(const string& text) {
 
         norm = stripJosa(norm);
         if (norm.empty()) continue;
+
+        if (STOPWORDS.find(norm) != STOPWORDS.end()) continue;
 
         if (!isKeyword(norm)) continue;
 
