@@ -7,7 +7,7 @@
 ### 주요 특징
 - ✅ **한국어 전용 분석**: 영어, 중국어, 일본어 등 기타 언어 자동 제외
 - ✅ **조사 자동 제거**: 은, 는, 이, 가, 을, 를 등 조사 자동 제거
-- ✅ **불용어 필터링**: 조사, 연결어 등 의미 없는 단어 제거
+- ✅ **불용어 필터링**: 접속어, 지시어 등 의미 없는 단어 제거
 - ✅ **품사 필터링**: 동사/형용사/부사 자동 제거 (명사 중심 분석)
 - ✅ **WebAssembly 기반**: 대용량 텍스트도 빠르게 처리
 
@@ -164,32 +164,32 @@ LanguageType detectLanguage(const string& w) {
 
 ```cpp
 string stripJosa(const string& w) {
-    // 한글이 아니면 조사 제거하지 않음
-    if (detectLanguage(w) != LanguageType::HANGUL) {
-        return w;
-    }
-    
-    static const vector<string> JO_ENDINGS = {
-        "은","는","이","가","을","를","에","에서","에게",
-        "으로","로","으로써","부터","까지",
-        "와","과","도","만","의","들","들은","들이"
-    };
-    
+    if (detectLanguage(w) != LanguageType::HANGUL) return w;
+
     string base = w;
-    bool stripped = true;
-    
-    // 여러 개 겹쳐 붙은 경우도 있으니 반복해서 잘라줌
-    while (stripped) {
-        stripped = false;
-        for (const auto& suf : JO_ENDINGS) {
-            if (base.size() > suf.size() && endsWith(base, suf)) {
-                base = base.substr(0, base.size() - suf.size());
-                stripped = true;
-                break;
-            }
+
+    static const vector<string> JOSA = {
+        "에게서는","에게서","께서는","으로써는","으로는","부터는","까지는",
+        "에게는","에게도","에서는","에서의","으로써","으로도","로는","로도",
+        "부터도","까지도","께서",
+        "와는","와도","과는","과도","의는","의가","에는","에도","에만",
+        "을은","를은","이는","이가","가는",
+        "들의","들은","들이",
+        "에게","에서","으로","부터","까지","라도","조차","마저","마다",
+        "에","의","께","과","와","을","를","은","는","이","가","도","만","들","뿐"
+    };
+
+    for (const auto& suf : JOSA) {
+        if (base.size() <= suf.size()) continue;
+        if (!endsWith(base, suf)) continue;
+        if (suf.size() == 3) {
+            if (base.size() < 9) continue;
         }
+
+        base = base.substr(0, base.size() - suf.size());
+        break;
     }
-    
+
     return base;
 }
 ```
