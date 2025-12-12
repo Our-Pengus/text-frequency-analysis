@@ -1,3 +1,6 @@
+/**
+ * 언어 감지 유틸리티
+ */
 // 언어 타입 구분
 export const LanguageType = {
   ENGLISH: "ENGLISH",

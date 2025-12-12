@@ -1,3 +1,6 @@
+/**
+ * 한글 단어 검증 유틸리티
+ */
 import { LanguageType, detectLanguage } from "./language-detector.js";
 import {
   STOPWORDS,

@@ -1,6 +1,10 @@
-// JavaScript 버전 텍스트 빈도 분석 (한국어 전용)
+/**
+ * 한국어 텍스트의 단어 빈도 분석을 수행하는 모듈
+ * - 정규화, 형태소 분석, 불용어 제거 포함
+ * - 순수 JS 구현 (브라우저 호환)
+ */
 
-import { normalizeWord, analyzeMorpheme } from "./utils/korean-processor.js";
+import { normalizeWord, analyzeMorpheme } from "./utils/text-normalizer.js";
 import { isValidKeyword } from "./utils/word-validators.js";
 
 /**

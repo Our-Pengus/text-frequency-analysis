@@ -1,5 +1,5 @@
 /**
- * 한국어 텍스트 전처리 유틸리티
+ * 한국어 형태소 분석기 (정규화에 초점)
  */
 
 import { LanguageType, detectLanguage } from "./language-detector.js";
@@ -16,6 +16,7 @@ import { trimPunctuation, endsWith } from "./string-utils.js";
  * @returns {string} 한글만 추출된 단어, 한글이 없으면 빈 문자열
  */
 export function normalizeWord(word) {
+  // 구두점 제거
   const trimmed = trimPunctuation(word);
   if (!trimmed) return "";
 
