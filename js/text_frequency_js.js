@@ -2,9 +2,13 @@
 
 // 불용어(stopwords) 목록
 const STOPWORDS = new Set([
-    "은","는","이","가","을","를","에","에서","에게","으로","으로써","부터","까지",
-    "와","과","도","만","및","등","때문에","위해","통해","또는","또한","또","때에","바에",
-    "모든","대한","그리고", "그러나", "하지만"
+    "그리고","그러나","하지만","또는","또한","또","때문에","위해",
+    "통해","등","및","대한","대하여","관하여","모든","이르되","말하되","가로되",
+    "때에","위하여","함께","이는",
+    "그","이","저","그들","그녀","그것","이것","저것",
+    "너","너희","너희들","나","우리","우리들","저희","저희들",
+    "누구","무엇","어디","언제","어느","어떤","이런","저런","그런",
+    "내","네","자기","바"
 ]);
 
 // 언어 타입 구분
@@ -108,33 +112,35 @@ function stripJosa(word) {
     }
     
     const JO_ENDINGS = [
-        // 기본 조사
-        "은","는","이","가","을","를","에","에서","에게",
-        "으로","로","으로써","부터","까지",
-        "와","과","도","만",
-        
-        // 보조적 요소
-        "께서","조차","마저","뿐","마다",
-        
-        // 소유/복수
-        "의","들","들은","들이","라도","까지의","부터의"
+        "에게서는","에게서","에게는","에게도","에게",
+        "에서는","에서의","에서",
+        "으로써는","으로써","으로는","으로도","으로",
+        "로는","로도","로",
+        "부터는","부터도","부터",
+        "까지는","까지도","까지",
+        "께서는","께서","께",
+        "에는","에도","에만","에",
+        "의는","의가","의",
+        "과는","과도","과",
+        "와는","와도","와",
+        "을은","을","를은","를",
+        "이는","이가","이",
+        "가는","가",
+        "은","는","도","만",
+        "들의","들은","들이","들",
+        "조차","마저","뿐","마다","라도"
     ];
     
     let base = word;
-    let stripped = true;
     
-    // 여러 개 겹쳐 붙은 경우도 있으니 반복해서 잘라줌
-    while (stripped) {
-        stripped = false;
-        
-        for (const suf of JO_ENDINGS) {
-            if (base.length > suf.length && endsWith(base, suf)) {
-                base = base.substring(0, base.length - suf.length);
-                stripped = true;
-                break;
-            }
-        }
+    // 조사 1회 제거 (단어 중 조사에 포함된 단어도 존재하기 때문에)
+    for (const suf of JO_ENDINGS) {
+    if (base.length > suf.length && endsWith(base, suf)) {
+      if (suf.length === 1 && base.length < 3) continue;
+      base = base.substring(0, base.length - suf.length);
+      break;
     }
+  }
     
     return base;
 }
@@ -146,8 +152,7 @@ function isKeyword(word) {
     // 한글이 아니면 제외
     if (detectLanguage(word) !== LanguageType.HANGUL) {
         return false;
-    }
-    
+    }   
     // 1. 불용어면 바로 제외
     if (STOPWORDS.has(word)) return false;
     
@@ -187,16 +192,6 @@ function isKeyword(word) {
     
     // (3) '다'로 끝나는 단어는 대부분 서술어 → 제거
     if (word.length >= 2 && endsWith(word, "다")) return false;
-    
-    // (4) 명사 접미사 패턴: 명사 가능성 매우 높음
-    const STRONG_NOUN_SUFFIX = [
-        "제도","정책","사회","문제","관","법","권","성","화","율","률","력",
-        "자","자들","인","학","론","점","상","안","주의","주의성","체제","구조","기구","기관","단체","운동"
-    ];
-    
-    for (const suf of STRONG_NOUN_SUFFIX) {
-        if (endsWith(word, suf)) return true;
-    }
     
     return true;
 }

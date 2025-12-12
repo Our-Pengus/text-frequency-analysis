@@ -304,8 +304,6 @@ vector<FrequencyResult> analyzeFrequency(const string& text) {
         norm = stripJosa(norm);
         if (norm.empty()) continue;
 
-        if (STOPWORDS.find(norm) != STOPWORDS.end()) continue;
-
         if (!isKeyword(norm)) continue;
 
         freq[norm]++;
