@@ -6,7 +6,6 @@ import {
   STOPWORDS,
   NG_ENDINGS,
   FUNCTION_NOUNS,
-  STRONG_NOUN_SUFFIX,
 } from "../constants/korean-rules.js";
 import { endsWith } from "./string-utils.js";
 
@@ -68,17 +67,6 @@ export function isFunctionNoun(word) {
   return FUNCTION_NOUNS.has(word);
 }
 
-/**
- * 강한 명사 패턴인지 검증 (포함 대상)
- * @param {string} word
- * @returns {boolean} true면 명사 가능성 매우 높음
- */
-export function isStrongNounPattern(word) {
-  for (const suf of STRONG_NOUN_SUFFIX) {
-    if (endsWith(word, suf)) return true;
-  }
-  return false;
-}
 
 /**
  * 단어가 분석할 가치가 있는 키워드인지 검증
@@ -97,9 +85,6 @@ export function isValidKeyword(word) {
   // 3. 기능 명사 제외
   if (isFunctionNoun(word)) return false;
 
-  // 4. 강한 명사 패턴이면 즉시 통과
-  if (isStrongNounPattern(word)) return true;
-
-  // 5. 그 외의 경우는 명사로 간주
+  // 4. 그 외의 경우는 명사로 간주
   return true;
 }

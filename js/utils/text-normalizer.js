@@ -55,18 +55,14 @@ export function stripJosa(word) {
   }
 
   let base = word;
-  let stripped = true;
 
-  // 여러 개 겹쳐 붙은 경우도 있으니 반복해서 잘라줌
-  while (stripped) {
-    stripped = false;
+  // 조사 1회만 제거 
+  for (const suf of JOSA_ENDINGS) {
+    if (base.length > suf.length && endsWith(base, suf)) {
+      if (suf.length === 1 && base.length < 4) continue;
 
-    for (const suf of JOSA_ENDINGS) {
-      if (base.length > suf.length && endsWith(base, suf)) {
-        base = base.substring(0, base.length - suf.length);
-        stripped = true;
-        break;
-      }
+      base = base.substring(0, base.length - suf.length);
+      break;
     }
   }
 
