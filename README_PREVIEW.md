@@ -123,45 +123,7 @@ bool isHangulUTF8Byte(const string& s, size_t pos) {
 
 ---
 
-### 2. 언어 타입 판별 (C++)
-
-```cpp
-LanguageType detectLanguage(const string& w) {
-    if (w.empty()) return LanguageType::OTHER;
-
-    bool hasHangul = false;
-    bool hasNonAscii = false;
-
-    for (size_t i = 0; i < w.size(); ) {
-        unsigned char c = static_cast<unsigned char>(w[i]);
-
-        if (c < 128) {
-            i++;  // ASCII 문자
-        } else {
-            hasNonAscii = true;
-
-            if (isHangulUTF8Byte(w, i)) {
-                hasHangul = true;
-                i += 3;  // UTF-8 한글은 3바이트
-            } else {
-                // 다른 UTF-8 멀티바이트 문자 처리
-                if ((c & 0xE0) == 0xC0) i += 2;
-                else if ((c & 0xF0) == 0xE0) i += 3;
-                else if ((c & 0xF8) == 0xF0) i += 4;
-                else i++;
-            }
-        }
-    }
-
-    if (hasHangul) return LanguageType::HANGUL;
-    if (!hasNonAscii) return LanguageType::ENGLISH;
-    return LanguageType::OTHER;
-}
-```
-
----
-
-### 3. 조사 제거 (C++)
+### 2. 조사 제거 (C++)
 
 ```cpp
 string stripJosa(const string& w) {
@@ -199,7 +161,7 @@ string stripJosa(const string& w) {
 
 ---
 
-### 4. 빈도 분석 메인 함수 (C++)
+### 3. 빈도 분석 메인 함수 (C++)
 
 ```cpp
 vector<FrequencyResult> analyzeFrequency(const string& text) {
@@ -240,7 +202,7 @@ vector<FrequencyResult> analyzeFrequency(const string& text) {
 
 ---
 
-### 5. JavaScript 버전 (모듈화된 구조)
+### 4. JavaScript 버전 (모듈화된 구조)
 
 JavaScript 버전은 **ES6 모듈**로 분리되어 유지보수와 테스트가 용이합니다.
 
@@ -536,10 +498,3 @@ export function isValidKeyword(word) {
 
 - Emscripten으로 C++ 코드를 WASM으로 컴파일
 - JavaScript와 seamless 통합
-
----
-
-```
-
----
-```
