@@ -498,3 +498,9 @@ export function isValidKeyword(word) {
 
 - Emscripten으로 C++ 코드를 WASM으로 컴파일
 - JavaScript와 seamless 통합
+
+---
+
+## 💥 시연
+
+### https://our-pengus.github.io/text-frequency-analysis/
