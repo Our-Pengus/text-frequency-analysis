@@ -340,6 +340,7 @@ export function normalizeWord(word) {
   if (!trimmed) return "";
 
   // 2. 언어 감지: 한글이 아니면 제외
+  // 만약 한글이 섞여있으면 통과
   if (detectLanguage(trimmed) !== LanguageType.HANGUL) {
     return ""; // "Hello", "你好" 등은 빈 문자열 반환
   }
